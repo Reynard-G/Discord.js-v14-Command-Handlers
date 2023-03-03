@@ -1,5 +1,5 @@
 const { EmbedBuilder, Collection, PermissionsBitField } = require("discord.js");
-const ms = require("ms");
+const moment = require("moment");
 const client = require("..");
 
 const cooldown = new Collection();
@@ -7,16 +7,25 @@ const cooldown = new Collection();
 client.on("interactionCreate", async interaction => {
 	const slashCommand = client.slashCommands.get(interaction.commandName);
 
-	if (interaction.type == 4) {
+	if (interaction.type === 4) {
 		if (slashCommand.autocomplete) {
 			const choices = [];
 			await slashCommand.autocomplete(interaction, choices);
 		}
 	}
-	if (!interaction.type == 2) return;
+	if (!interaction.type === 2) return;
 	if (!slashCommand) return client.slashCommands.delete(interaction.commandName);
 
 	const subCommandOption = interaction.options.getSubcommand(false) || interaction.options.getSubcommandGroup(false);
+	const subCommand = subCommandOption ? client.subCommands.get(`${interaction.commandName} ${subCommandOption}`, subCommandOption) : null;
+
+	// Logging
+	if (subCommand) {
+		console.log(`${interaction.user.tag} (${interaction.user.id})`, `${slashCommand.name} ${subCommand.name}`);
+	} else {
+		console.log(`${interaction.user.tag} (${interaction.user.id})`, slashCommand.name);
+	}
+
 	try {
 		if (slashCommand.cooldown) {
 			if (cooldown.has(`slash-${slashCommand.name}${interaction.user.id}`)) {
@@ -53,7 +62,6 @@ client.on("interactionCreate", async interaction => {
 
 		// Subcommand handler
 		if (subCommandOption) {
-			const subCommand = client.subCommands.get(subCommandOption);
 			if (subCommand) {
 				subCommand.run(client, interaction);
 			}
